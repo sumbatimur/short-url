@@ -5,20 +5,27 @@ import { notFound } from 'next/navigation';
 export default async function ShortLinkPage({ params }: { params: { slug: string } }) {
   const { slug } = await params;
   
-  const supabase = await createClient();
-  
-  // Gunakan .maybeSingle() agar tidak error jika data ganda atau tidak ada
-  const { data, error } = await supabase
-    .from('short_links')
-    .select('original_url')
-    .eq('short_code', slug)
-    .maybeSingle();
+  try {
+    const supabase = await createClient();
+    
+    const { data, error } = await supabase
+      .from('tb_short_links')  // Pastikan nama tabel sesuai (tb_short_links)
+      .select('original_url')
+      .eq('slug', slug)
+      .maybeSingle();
 
-  // Jika error atau data kosong, lempar 404
-  if (error || !data) {
+    if (error) {
+      console.error('Supabase error:', error);
+      throw new Error('Database error');
+    }
+
+    if (!data) {
+      notFound();
+    }
+
+    redirect(data.original_url);
+  } catch (err) {
+    console.error('Server error:', err);
     notFound();
   }
-
-  // Redirect ke URL asli
-  redirect(data.original_url);
 }
