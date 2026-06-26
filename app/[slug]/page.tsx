@@ -4,7 +4,9 @@ import { redirect } from 'next/navigation';
 export default async function ShortLinkPage({ params }: { params: { slug: string } }) {
   const { slug } = await params;
   
-  const supabase = createClient();
+  // PERBAIKAN: Tambahkan await di sini!
+  const supabase = await createClient();
+  
   const { data, error } = await supabase
     .from('short_links')
     .select('original_url')
