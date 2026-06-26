@@ -1,26 +1,24 @@
 import { createClient } from '@/utils/supabase/server';
 import { redirect } from 'next/navigation';
+import { notFound } from 'next/navigation';
 
 export default async function ShortLinkPage({ params }: { params: { slug: string } }) {
   const { slug } = await params;
   
-  // PERBAIKAN: Tambahkan await di sini!
   const supabase = await createClient();
   
+  // Gunakan .maybeSingle() agar tidak error jika data ganda atau tidak ada
   const { data, error } = await supabase
     .from('short_links')
     .select('original_url')
     .eq('short_code', slug)
-    .single();
+    .maybeSingle();
 
+  // Jika error atau data kosong, lempar 404
   if (error || !data) {
-    return (
-      <div style={{ textAlign: 'center', padding: '50px' }}>
-        <h1>404 - Link Tidak Ditemukan</h1>
-        <p>Short link yang Anda scan tidak valid.</p>
-      </div>
-    );
+    notFound();
   }
 
+  // Redirect ke URL asli
   redirect(data.original_url);
 }
