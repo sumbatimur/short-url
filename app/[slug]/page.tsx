@@ -1,31 +1,30 @@
 import { createClient } from '@/utils/supabase/server';
-import { redirect } from 'next/navigation';
-import { notFound } from 'next/navigation';
+import { redirect, notFound } from 'next/navigation';
 
-export default async function ShortLinkPage({ params }: { params: { slug: string } }) {
+export default async function ShortLinkPage({ 
+  params 
+}: { 
+  params: Promise<{ slug: string }> 
+}) {
   const { slug } = await params;
   
-  try {
-    const supabase = await createClient();
-    
-    const { data, error } = await supabase
-      .from('tb_short_links')  // Pastikan nama tabel sesuai (tb_short_links)
-      .select('original_url')
-      .eq('slug', slug)
-      .maybeSingle();
+  const supabase = await createClient();
+  
+  const { data, error } = await supabase
+    .from('tb_short_links')
+    .select('original_url, is_active, expires_at')
+    .eq('slug', slug)
+    .eq('is_active', true)
+    .maybeSingle();
 
-    if (error) {
-      console.error('Supabase error:', error);
-      throw new Error('Database error');
-    }
-
-    if (!data) {
-      notFound();
-    }
-
-    redirect(data.original_url);
-  } catch (err) {
-    console.error('Server error:', err);
+  if (error || !data) {
     notFound();
   }
+
+  // Cek expired
+  if (data.expires_at && new Date(data.expires_at) < new Date()) {
+    notFound();
+  }
+
+  redirect(data.original_url);
 }
